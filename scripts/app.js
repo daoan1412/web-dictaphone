@@ -23,12 +23,12 @@ if (navigator.mediaDevices.getUserMedia) {
   const constraints = { audio: true };
   let chunks = [];
 
-  let onSuccess = function(stream) {
+  let onSuccess = function (stream) {
     const mediaRecorder = new MediaRecorder(stream);
 
     visualize(stream);
 
-    record.onclick = function() {
+    record.onclick = function () {
       mediaRecorder.start();
       console.log(mediaRecorder.state);
       console.log("recorder started");
@@ -38,7 +38,7 @@ if (navigator.mediaDevices.getUserMedia) {
       record.disabled = true;
     }
 
-    stop.onclick = function() {
+    stop.onclick = function () {
       mediaRecorder.stop();
       console.log(mediaRecorder.state);
       console.log("recorder stopped");
@@ -50,10 +50,10 @@ if (navigator.mediaDevices.getUserMedia) {
       record.disabled = false;
     }
 
-    mediaRecorder.onstop = function(e) {
+    mediaRecorder.onstop = function (e) {
       console.log("data available after MediaRecorder.stop() called.");
 
-      const clipName = prompt('Enter a name for your sound clip?','My unnamed clip');
+      const clipName = prompt('Enter a name for your sound clip?', 'My unnamed clip');
 
       const clipContainer = document.createElement('article');
       const clipLabel = document.createElement('p');
@@ -65,7 +65,7 @@ if (navigator.mediaDevices.getUserMedia) {
       deleteButton.textContent = 'Delete';
       deleteButton.className = 'delete';
 
-      if(clipName === null) {
+      if (clipName === null) {
         clipLabel.textContent = 'My unnamed clip';
       } else {
         clipLabel.textContent = clipName;
@@ -77,21 +77,22 @@ if (navigator.mediaDevices.getUserMedia) {
       soundClips.appendChild(clipContainer);
 
       audio.controls = true;
-      const blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+      const blob = new Blob(chunks, { 'type': 'audio/ogg; codecs=opus' });
+      speechToText(blob);
       chunks = [];
       const audioURL = window.URL.createObjectURL(blob);
       audio.src = audioURL;
       console.log("recorder stopped");
 
-      deleteButton.onclick = function(e) {
+      deleteButton.onclick = function (e) {
         let evtTgt = e.target;
         evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
       }
 
-      clipLabel.onclick = function() {
+      clipLabel.onclick = function () {
         const existingName = clipLabel.textContent;
         const newClipName = prompt('Enter a new name for your sound clip?');
-        if(newClipName === null) {
+        if (newClipName === null) {
           clipLabel.textContent = existingName;
         } else {
           clipLabel.textContent = newClipName;
@@ -99,23 +100,43 @@ if (navigator.mediaDevices.getUserMedia) {
       }
     }
 
-    mediaRecorder.ondataavailable = function(e) {
+    mediaRecorder.ondataavailable = function (e) {
       chunks.push(e.data);
     }
   }
 
-  let onError = function(err) {
+  let onError = function (err) {
     console.log('The following error occured: ' + err);
   }
 
   navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
 
 } else {
-   console.log('getUserMedia not supported on your browser!');
+  console.log('getUserMedia not supported on your browser!');
+}
+
+
+function speechToText(blob) {
+  fetch("https://api.fpt.ai/hmi/asr/general", {
+    method: 'POST',
+    headers: {
+      'api-key': "3RFIsNa1KaBkaq3yCc4FxrieRpFfpUjZ"
+    },
+    body: blob
+  })
+    .then(response => response.json())
+    .then((data) => {
+      console.log(data);
+      const text = document.createElement('p');
+      text.innerHTML = data["hypotheses"][0]["utterance"];
+      soundClips.appendChild(text);
+    }).catch((err) => {
+      console.log(err);
+    })
 }
 
 function visualize(stream) {
-  if(!audioCtx) {
+  if (!audioCtx) {
     audioCtx = new AudioContext();
   }
 
@@ -151,12 +172,12 @@ function visualize(stream) {
     let x = 0;
 
 
-    for(let i = 0; i < bufferLength; i++) {
+    for (let i = 0; i < bufferLength; i++) {
 
       let v = dataArray[i] / 128.0;
-      let y = v * HEIGHT/2;
+      let y = v * HEIGHT / 2;
 
-      if(i === 0) {
+      if (i === 0) {
         canvasCtx.moveTo(x, y);
       } else {
         canvasCtx.lineTo(x, y);
@@ -165,13 +186,13 @@ function visualize(stream) {
       x += sliceWidth;
     }
 
-    canvasCtx.lineTo(canvas.width, canvas.height/2);
+    canvasCtx.lineTo(canvas.width, canvas.height / 2);
     canvasCtx.stroke();
 
   }
 }
 
-window.onresize = function() {
+window.onresize = function () {
   canvas.width = mainSection.offsetWidth;
 }
 
